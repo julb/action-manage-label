@@ -1,0 +1,27 @@
+name: Integration Test
+
+on: 
+  workflow_dispatch:
+    inputs:
+      from:
+        description: "The file containing the labels."
+        default: '.github/config/labels.yml'
+        required: false
+      skip_delete:
+        description: "Flag indicating if existing labels not configured should be kept."
+        default: false
+        required: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Test repository
+        id: create_milestone
+        uses: ./
+        with:
+          from: ${{ github.event.inputs.from }}
+          skip_delete:  ${{ github.event.inputs.skip_delete }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

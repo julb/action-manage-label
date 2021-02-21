@@ -1,0 +1,179 @@
+on:
+  push:
+    branches:
+      - 'releases/**'
+
+name: Release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set vars
+      id: vars
+      run: |
+        echo ::set-output name=release_source_branch_name::${GITHUB_REF#refs/heads/}
+        echo ::set-output name=release_version::${GITHUB_REF#refs/heads/releases/}
+        echo ::set-output name=release_major_version::$(awk -F. '{print $1}' <<< ${GITHUB_REF#refs/heads/releases/})
+        echo ::set-output name=release_target_maintenance_branch_name::$(awk -F. '{print "maintenances/" $1 "." $2 ".x"}' <<< ${GITHUB_REF#refs/heads/releases/})
+        echo ::set-output name=release_target_default_branch_name::main
+
+    - name: Verify if tag exists
+      uses: mukunku/tag-exists-action@v1.0.0
+      id: checkTag
+      with: 
+        tag: ${{ steps.vars.outputs.release_version }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Fails if tag exists
+      if: ${{ steps.checkTag.outputs.exists == 'true' }}
+      run: echo "Tag already exists." && exit 1
+
+    - name: Verify if maintenance branch exists
+      uses: arundo/branch-exists@master
+      id: checkMaintenanceBranch
+      with: 
+        token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ steps.vars.outputs.release_target_maintenance_branch_name }}
+        repository: ${{ github.repository }}
+    
+    - name: Set target branch
+      id: targetBranch
+      run: |
+        if [ $MAINTENANCE_BRANCH_EXISTS == 'true' ]
+        then
+            echo "::set-output name=release_target_branch_name::${{ steps.vars.outputs.release_target_maintenance_branch_name }}"
+        else
+            echo "::set-output name=release_target_branch_name::${{ steps.vars.outputs.release_target_default_branch_name }}"
+        fi
+      env:
+        MAINTENANCE_BRANCH_EXISTS: ${{ steps.checkMaintenanceBranch.outputs.exists }}
+
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v1
+      with:
+        python-version: '3.9'
+
+    - uses: actions/checkout@v2
+
+    - name: Building/Unit testing artifacts
+      run: make install.dependencies lint
+
+    - name: Updating file versions
+      run: echo "Nothing to do."
+
+    - name: Update CHANGELOG.md
+      uses: heinrichreimer/github-changelog-generator-action@v2.2
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        futureRelease: ${{ steps.vars.outputs.release_version }}
+        addSections: '{"documentation":{"prefix":"**Documentation updates:**","labels":["documentation"]},"tests":{"prefix":"**Testing**","labels":["tests"]}}'
+        issues: true
+        issuesWoLabels: true
+        pullRequests: true
+        prWoLabels: true
+        author: true
+        filterByMilestone: true
+        compareLink: true
+        stripGeneratorNotice: true
+        unreleased: true
+        verbose: true
+        excludeTagsRegex: ^(latest|v[0-9]+)$
+
+    - uses: EndBug/add-and-commit@v7 # You can change this to use a specific version
+      with:
+        author_name: github-actions
+        author_email: 41898282+github-actions[bot]@users.noreply.github.com
+        message: "Updating files with version ${{ steps.vars.outputs.release_version }}"
+        push: "origin ${{ steps.vars.outputs.release_version }}"
+        tag: "${{ steps.vars.outputs.release_version }}"
+
+    - name: Publish artifacts
+      run: echo "Publish artifacts to repository......."
+
+    - name: Build Changelog
+      id: github_release
+      uses: mikepenz/release-changelog-builder-action@main
+      with:
+        configuration: ".github/config/changelog.json"
+        toTag: "${{ steps.vars.outputs.release_version }}"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.vars.outputs.release_version }}
+        release_name: Release ${{ steps.vars.outputs.release_version }}
+        body: ${{steps.github_release.outputs.changelog}}
+
+    - name: Create major tag
+      uses: julb/action-manage-tag@v1
+      with:
+        name: v${{ steps.vars.outputs.release_major_version }}
+        state: present
+        from: ${{ steps.vars.outputs.release_version }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Create latest tag
+      uses: julb/action-manage-tag@v1
+      with:
+        name: latest
+        state: present
+        from: ${{ steps.vars.outputs.release_version }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Merge back changes to target branch
+      uses: devmasx/merge-branch@v1.3.1
+      with:
+        type: now
+        target_branch: ${{ steps.targetBranch.outputs.release_target_branch_name }}
+        from_branch: ${{ steps.vars.outputs.release_version }}
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: "Switch back to target branch"
+      uses: actions/checkout@v2
+      with:
+        ref: ${{ steps.targetBranch.outputs.release_target_branch_name }}
+    
+    - name: Bumping version
+      id: bumpVersion
+      run: |
+        make install.dependencies
+        venv/bin/bump2version --current-version ${{ steps.vars.outputs.release_version }} patch
+        echo ::set-output name=next_version::$(make version.get)
+
+    - name: Push changes
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ steps.targetBranch.outputs.release_target_branch_name }}
+
+    - name: "Close old milestone"
+      uses: julb/action-manage-milestone@v1
+      with:
+        title: ${{ steps.vars.outputs.release_version }}
+        state: 'closed'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: "Create new milestone"
+      uses: julb/action-manage-milestone@v1
+      with:
+        title: ${{ steps.bumpVersion.outputs.next_version }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Drop release branch
+      uses: julb/action-manage-branch@v1
+      with:
+        name: ${{ steps.vars.outputs.release_source_branch_name }}
+        state: absent
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

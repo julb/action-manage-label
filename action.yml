@@ -1,0 +1,18 @@
+name: Manage the labels
+description: "Manage the labels for a given repository"
+author: "julb"
+branding:
+  icon: edit-2
+  color: blue
+inputs:
+  from:
+    description: "The file containing the labels."
+    default: '.github/config/labels.yml'
+    required: false
+  skip_delete:
+    description: "Flag indicating if existing labels not configured should be kept."
+    default: false
+    required: false
+runs:
+  using: "docker"
+  image: "Dockerfile"
