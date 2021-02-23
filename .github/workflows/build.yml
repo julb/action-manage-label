@@ -6,8 +6,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: "Building the project"
-        run: echo "Nothing to do."
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.9'
+      - uses: actions/checkout@v2
+      - run: make build
   lint:
     runs-on: ubuntu-latest
     name: lint
@@ -17,9 +21,13 @@ jobs:
         with:
           python-version: '3.9'
       - uses: actions/checkout@v2
-      - run: make install.dependencies lint
+      - run: make lint
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: "Testing the project"
-        run: echo "Nothing to do."
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.9'
+      - uses: actions/checkout@v2
+      - run: make test

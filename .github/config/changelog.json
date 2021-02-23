@@ -1,0 +1,28 @@
+{
+    "categories": [
+      {
+        "title": "## 🚀 New features",
+        "labels": ["type: enhancement"]
+      },
+      {
+        "title": "## 🔨 Breaking changes",
+        "labels": ["type: breaking-change"]
+      },
+      {
+        "title": "## 🐞 Bug fixes",
+        "labels": ["type: bug", "type: regression"]
+      },
+      {
+        "title": "## 👋 Deprecated",
+        "labels": ["type: deprecation"]
+      },
+      {
+        "title": "## 📘 Documentation",
+        "labels": ["type: documentation"]
+      },
+      {
+        "title": "## 🏹 Dependency Upgrades",
+        "labels": ["type: dependency-upgrade"]
+      }
+    ]
+}
