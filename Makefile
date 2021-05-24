@@ -37,7 +37,7 @@ push:
 	echo "NOOP."
 
 #format: @ Format code
-format:
+format: install.dependencies
 	@exec >&2; \
 	echo "> Formatting."; \
 	venv/bin/autopep8 -ir *.py
