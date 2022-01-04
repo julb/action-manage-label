@@ -20,8 +20,11 @@ def _read_input_from(input_from):
     inputs = []
 
     for input_from_line in input_from.splitlines():
+        # Normalize file path.
+        input_from_line = input_from_line.strip()
+        
         # Skip if line is empty.
-        if input_from_line.strip() == '':
+        if not input_from_line:
             continue
 
         # Load file content
