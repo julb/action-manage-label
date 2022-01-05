@@ -31,11 +31,11 @@ def _read_input_from(input_from):
         print(f"::debug::Loading labels from '{input_from_line}'.")
         input_from_content = None
         if input_from_line.startswith('http://') or input_from_line.startswith('https://'):
-            requests_url_response = requests.get(input_from)
+            requests_url_response = requests.get(input_from_line)
             if requests_url_response.ok:
                 input_from_content = requests_url_response.text
             else:
-                raise Exception(f'Unable to read file from {input_from}: {requests_url_response.reason}')
+                raise Exception(f'Unable to read file from {input_from_line}: {requests_url_response.reason}')
         else:
             with open(input_from_line, 'r') as input_from_file:
                 input_from_content = input_from_file.read()
