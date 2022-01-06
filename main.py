@@ -22,7 +22,7 @@ def _read_input_from(input_from):
     for input_from_line in input_from.splitlines():
         # Normalize file path.
         input_from_line = input_from_line.strip()
-        
+
         # Skip if line is empty.
         if not input_from_line:
             continue
@@ -37,7 +37,7 @@ def _read_input_from(input_from):
             else:
                 raise Exception(f'Unable to read file from {input_from_line}: {requests_url_response.reason}')
         else:
-            with open(input_from_line, 'r') as input_from_file:
+            with open(input_from_line, 'r', encoding="utf8") as input_from_file:
                 input_from_content = input_from_file.read()
 
         if input_from_line.endswith('.yaml') or input_from_line.endswith('.yml'):
