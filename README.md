@@ -51,6 +51,23 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
+- Label configuration structure in YAML file:
+
+```yaml
+- name: "bug"
+  color: "D73A4A"
+  description: "Something isn't working"
+
+- name: "critical"
+  color: "FF1493"
+  description: "High urgency label"
+
+- name: "docs"
+  color: "808000"
+  description: "Improvements or additions to documentation"
+
+```
+
 ### Inputs
 
 | Name          | Type    | Default                     | Description                                                                                                                                              |
