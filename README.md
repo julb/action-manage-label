@@ -29,7 +29,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-- Synchronize labels from multiple YAML files:
+- Synchronize labels from multiple YAML files, optionally over HTTP, too:
 
 ```yaml
 jobs:
@@ -43,6 +43,7 @@ jobs:
         uses: julb/action-manage-label@v1
         with:
           from: |
+            https://raw.githubusercontent.com/my-org/my-repositorty/path-to-folder-with/common-labels.yml
             .github/config/labels.yml
             .github/config/other-labels.yml
           skip_delete: false
